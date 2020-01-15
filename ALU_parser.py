@@ -1,4 +1,5 @@
-#!/Users/vilmacanfjorden/miniconda3/bin/python
+#!/apps/bio/software/anaconda2/envs/hcp/bin/python
+# /Users/vilmacanfjorden/miniconda3/bin/python
 
 import os
 import argparse
@@ -14,7 +15,7 @@ parser.add_argument("--vdir", \
 args = parser.parse_args()
 
 
-vcf_list = glob.glob((args.vdir+'*.vcf*'))
+vcf_list = glob.glob((args.vdir+'*SV*.vcf*'))
 
 print(vcf_list)
 
