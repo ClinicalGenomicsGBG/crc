@@ -15,7 +15,7 @@ parser.add_argument("--vdir", \
 args = parser.parse_args()
 
 
-vcf_list = glob.glob((args.vdir+'*SV*.vcf*'))
+vcf_list = glob.glob(args.vdir+'/*SV*.vcf*')
 
 print(vcf_list)
 
