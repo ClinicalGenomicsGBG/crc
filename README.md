@@ -1,5 +1,7 @@
 # README #
 
+Colorectal cancer related scripts
+
 ALU_parser.py
 Takes a list with files, open ine file at a time and alters info field if "Alu" is found and add END position
 
