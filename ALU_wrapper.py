@@ -83,7 +83,6 @@ def sendtoslims():
 def compressfiles(folderpath):
     destination = seqpath + "/saved/"
     filename = folderpath.split('/').pop() + ".tgz"
-    print("zip path: tar zcf " + destination + filename + " " + folderpath)
     subprocess.call(['tar', 'zcf', destination + filename, folderpath])
 
 
