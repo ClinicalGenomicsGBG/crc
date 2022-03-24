@@ -47,6 +47,7 @@ def email_general(msg_to, msg_from, subject, body, attachment=None):
 
 
 def vcfparse(updated_file, v):
+    # TODO: Rev this part / rewrite
     new_vcf = open(updated_file, 'w')
     with open(v, "r") as vcf:
         info_list = []
@@ -81,7 +82,7 @@ def sendtoslims():
 
 
 def compressfiles(folderpath):
-    destination = seqpath + "/saved/"
+    destination = seqpath + "/saved/"  # This needs changing. Now set to subfolder saved under input-path (seqpath).
     filename = folderpath.split('/').pop() + ".tgz"
     subprocess.call(['tar', 'zcf', destination + filename, folderpath])
 
