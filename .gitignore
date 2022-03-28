@@ -1,1 +1,3 @@
 test/
+.idea/
+conda-env/crc_conda/
