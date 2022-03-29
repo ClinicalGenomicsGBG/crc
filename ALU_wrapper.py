@@ -1,49 +1,30 @@
-#!/apps/bio/software/anaconda2/envs/hcp/bin/python3
+#!/usr/bin/env python3
 
-# Please note, this is an early version. All the verbose-stuff will be reduced at later stages.
 # TODO: functions for copy finished data to web folder
-# TODO: Information to slims?
+# TODO: Send information to slims
 # TODO: What to do with original folders?
 
 import os
 import glob
-import smtplib
+import logging
 import argparse
 import subprocess
-from email.message import EmailMessage
-
-mail_to = ""  # Change this, and uncomment argument before EOF
-pythonpath = "/apps/bio/software/anaconda2/envs/hcp/bin/python3"  # since server (as for now) has python2 installed
+from CGG.tools import emailer
 
 parser = argparse.ArgumentParser(description='Wrapper to find non-processed folders, run ALU_parser on them.')
 parser.add_argument("-p", "--path", help="Path to folder with sequence-subfolders.", action="store", default=".")
-# /seqstore/remote/share/crc
+# TODO: Get default from config-file
+parser.add_argument("-m", "--mailto", help="Mail address to message if files are changed.",
+                    action="store", default="")  # TODO: get default or leave empty for no mail?
 parser.add_argument("-r", "--run", help="Run for real. If not specified, just dry-run without any changes.",
                     action="store_true")
-parser.add_argument("-v", "--verbose", help="Show more information while running.", action="store_true")
+parser.add_argument("--loglevel", choices=['info', 'warning', 'error', 'debug'],
+                    default="warning", help='Level of logging')
 args = parser.parse_args()
-sendmail = False
+logging.basicConfig(level=args.loglevel.upper())
 seqpath = args.path
-
-
-def email_general(msg_to, msg_from, subject, body, attachment=None):
-    msg = EmailMessage()
-    msg.set_content(f'{body}\n'
-                    f'\n'
-                    f'Kind regards,\n'
-                    f'Clinical Genomics Gothenburg')
-    msg['Subject'] = f'{subject}'
-    msg['From'] = msg_from
-    msg['To'] = msg_to
-    # msg['Cc'] = "clinicalgenomics@gu.se"
-    if attachment:  # Add attachment if provided
-        csv_filename = os.path.basename(attachment)
-        with open(attachment, 'rb') as f:
-            data = f.read()
-            msg.add_attachment(data, maintype='text', subtype='plain', filename=csv_filename)
-    s = smtplib.SMTP('smtp.gu.se')
-    s.send_message(msg)
-    s.quit()
+msg_to = args.mailto
+finished = False
 
 
 def vcfparse(updated_file, v):
@@ -82,47 +63,36 @@ def sendtoslims():
 
 
 def compressfiles(folderpath):
-    destination = seqpath + "/saved/"  # This needs changing. Now set to subfolder saved under input-path (seqpath).
-    filename = folderpath.split('/').pop() + ".tgz"
+    destination = seqpath + "/saved/"  # This needs changing. Now set to sub-folder saved under input-path (seqpath).
+    filename = folderpath.split('/').pop() + ".tar.gz"
     subprocess.call(['tar', 'zcf', destination + filename, folderpath])
 
 
-if not args.run:
-    print("Not parsing any found files, specify -r to actually run")
-folderList = next(os.walk(seqpath + '/.'))[1]
-if args.verbose:
-    print("List of folders in dir: ")
-    for folder in folderList:
-        print(folder)
-    print("--- END OF LIST ---")
+def mailout():
+    msg_from = "crc@gu.se"  # TODO: Get from config-file
+    msg_subject = "The crc files are done!"
+    msg_body = "Hi!\nThe CLC-files are processed and ready for download."  # TODO: Change to a better mail
+    emailer.send_email(msg_to, msg_from, msg_subject, msg_body)
 
+
+folderList = next(os.walk(seqpath + '/.'))[1]
 for folder in folderList:
+    logging.info("Folder: " + folder)
     if "DNA" in folder and "_" not in folder:
-        # Skipping folders with _ in the names... this is actually not needed.
+        # Skipping folders with _ in the names. This is not actually needed.
         path = seqpath + '/' + folder
-        if glob.glob(path + '/*melt*.vcf*'):  # depending on how we want to run this. just an example.
-            if args.verbose:
-                print("Processed files found in folder " + folder + ", not running again.")
+        if glob.glob(path + '/*melt*.vcf*'):  # TODO: Get regex from config-file
+            logging.debug("Processed files found in folder " + folder + ", not running again.")
         else:
-            if args.verbose:
-                print("No processed files found in folder " + folder + ", continuing.")
+            logging.debug("No processed files found in folder " + folder + ", continuing.")
             if args.run:
-                if args.verbose:
-                    print("running on folder: " + path)
-                print("Folder: " + folder + " Path: " + path)
+                logging.debug("running on folder: " + folder + "; path: " + path)
                 alurunner()
                 sendtoslims()
                 compressfiles(path)
-                sendmail = True
+                finished = True
             else:
-                if args.verbose:
-                    print("Not running on folder " + path + ", use -r to actually run")
+                logging.debug("Not running on folder " + path + ", use -r to actually run")
 
-if sendmail:
-    mail_from = ""
-    mail_subject = "the crc files are done"
-    mail_body = "Hi!\nThe CLC-files are processed and ready for download."  # Change to a better mail
-    #  email_general(msg_to, msg_from, subject, body) # Uncomment to actually send mail.
-    if args.verbose:
-        print("mailto: " + mail_to + "; mail from: " + mail_from +
-              "; subject: " + mail_subject + ";\n--- mail body ---\n" + mail_body)
+if finished:
+    mailout()
