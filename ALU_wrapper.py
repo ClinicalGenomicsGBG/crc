@@ -82,17 +82,17 @@ for folder in folderList:
         # Skipping folders with _ in the names. This is not actually needed.
         path = seqpath + '/' + folder
         if glob.glob(path + '/*melt*.vcf*'):  # TODO: Get regex from config-file
-            logging.debug("Processed files found in folder " + folder + ", not running again.")
+            logging.debug(f"Processed files found in folder {folder}, not running again.")
         else:
-            logging.debug("No processed files found in folder " + folder + ", continuing.")
+            logging.debug(f"No processed files found in folder {folder}, continuing.")
             if args.run:
-                logging.debug("running on folder: " + folder + "; path: " + path)
+                logging.debug(f"running on folder: {folder} in path: {path}")
                 alurunner()
                 sendtoslims()
                 compressfiles(path)
                 finished = True
             else:
-                logging.debug("Not running on folder " + path + ", use -r to actually run")
+                logging.debug(f"Not running on folder {path}, use -r to actually run")
 
 if finished:
-    mailout()
+    mailout()  # TODO: Better handling if no mail is provided?
